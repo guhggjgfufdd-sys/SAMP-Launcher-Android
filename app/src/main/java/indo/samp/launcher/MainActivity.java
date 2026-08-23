@@ -1,10 +1,9 @@
 package indo.samp.launcher;
- 
+
 import android.app.Activity;
 import android.app.*;
 import android.os.*;
 import android.view.*;
-import android.view.View.*;
 import android.widget.*;
 import android.content.*;
 import android.content.res.*;
@@ -41,37 +40,61 @@ import java.util.Date;
 import android.Manifest;
 import android.content.pm.PackageManager;
 
-
-public class MainActivity extends Activity 
-{ 
+public class MainActivity extends Activity
+{
     private Button connect;
-	private EditText name;
-	private Intent i = new Intent();
+    private EditText name;
+    private Intent i = new Intent();
+
     @Override
-    protected void onCreate(Bundle savedInstanceState) 
-	{
-		if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED
-			||checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED) {
-			requestPermissions(new String[] {Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.MANAGE_DOCUMENTS}, 1000);
-		}
+    protected void onCreate(Bundle savedInstanceState)
+    {
+        if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED
+            || checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED) {
+            requestPermissions(new String[] {Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1000);
+        }
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-		
-		connect = findViewById(R.id.connect);
-		name = findViewById(R.id.Name);
-		
-	    connect.setOnClickListener(new View.OnClickListener()
-	    {
-		    @Override
-		    public void onClick(View _view) 
-			{
-				writeFile("/storage/emulated/0/android/media/com.rockstargames.gtasa/settings.name", name.getText().toString());
-			    i = getPackageManager().getLaunchIntentForPackage("com.rockstargames.gtasa");
-				startActivity(i);
-	        }
+
+        connect = findViewById(R.id.connect);
+        name = findViewById(R.id.Name);
+
+        connect.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View _view)
+            {
+                String playerName = name.getText().toString().trim();
+                
+                if (playerName.isEmpty()) {
+                    Toast.makeText(getApplicationContext(), "يرجى كتابة اسمك أولاً!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                // تجهيز ملف إعدادات الاتصال بالسيرفر
+                String settingsContent = "[client]\n" +
+                        "name = " + playerName + "\n" +
+                        "host = 142.132.203.47\n" +
+                        "port = 21299\n";
+
+                // حفظ الإعدادات في المجلدات الخاصة باللعبة
+                writeFile("/storage/emulated/0/Android/data/com.rockstargames.gtasa/files/SAMP/settings.ini", settingsContent);
+                writeFile("/storage/emulated/0/android/media/com.rockstargames.gtasa/settings.ini", settingsContent);
+                writeFile("/storage/emulated/0/android/media/com.rockstargames.gtasa/settings.name", playerName);
+
+                // تشغيل لعبة GTA SA
+                i = getPackageManager().getLaunchIntentForPackage("com.rockstargames.gtasa");
+                if (i != null) {
+                    startActivity(i);
+                } else {
+                    Toast.makeText(getApplicationContext(), "لعبة GTA SA غير مثبتة على جهازك!", Toast.LENGTH_LONG).show();
+                }
+            }
         });
     }
-	public static void writeFile(String path, String str) {
+
+    public static void writeFile(String path, String str) {
         createNewFile(path);
         FileWriter fileWriter = null;
 
@@ -83,14 +106,16 @@ public class MainActivity extends Activity
             e.printStackTrace();
         } finally {
             try {
-                if (fileWriter != null)
+                if (fileWriter != null) {
                     fileWriter.close();
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
     }
-	private static void createNewFile(String path) {
+
+    private static void createNewFile(String path) {
         int lastSep = path.lastIndexOf(File.separator);
         if (lastSep > 0) {
             String dirPath = path.substring(0, lastSep);
@@ -105,13 +130,15 @@ public class MainActivity extends Activity
             e.printStackTrace();
         }
     }
-	public static void makeDir(String path) {
+
+    public static void makeDir(String path) {
         if (!isExistFile(path)) {
             File file = new File(path);
             file.mkdirs();
         }
     }
-	public static boolean isExistFile(String path) {
+
+    public static boolean isExistFile(String path) {
         File file = new File(path);
         return file.exists();
     }
